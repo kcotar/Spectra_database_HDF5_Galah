@@ -1,11 +1,12 @@
 import flask
-import hdf_read
+from hdf_read import Hdf5Spectra
 
 # -------------------------------
 # ----------- FLASK -------------
 # -------------------------------
 app = flask.Flask(__name__)
 
+hdf_read = Hdf5Spectra('galah_dr53.hdf5', raw=False)
 
 @app.route('/', methods=['GET'])
 def home():
@@ -15,8 +16,10 @@ def home():
 @app.route('/galah_dr53', methods=['GET'])
 def get_data():
     in_args = flask.request.args
-    if 'sobject_id' in in_args:
-        return hdf_read.get_h5_data(in_args['sobject_id'])
+    if 'sobject_id' in in_args and 'ccd' in in_args:
+        json_response = hdf_read.get_h5_data(in_args['sobject_id'].split(','),
+                                             in_args['ccd'].split(','))
+        return flask.json.jsonify(json_response)
     else:
         return 'Spectrum not selected'
 
@@ -31,3 +34,4 @@ def get_wvl():
 
 
 app.run(host='193.2.67.179', port=8080, debug=True)
+hdf_read.close()

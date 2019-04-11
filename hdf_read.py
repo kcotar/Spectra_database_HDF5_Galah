@@ -1,6 +1,7 @@
 from os.path import isfile
 import h5py
-
+import json
+import numpy as np
 
 # -------------------------------
 # ----------- Functions ---------
@@ -18,6 +19,7 @@ class Hdf5Spectra:
         :param raw:
         """
         if not isfile(full_path):
+            self.close()
             raise IOError('File does not exist')
         self.data = h5py.File(full_path, 'r')
         self.raw = raw
@@ -30,7 +32,7 @@ class Hdf5Spectra:
         self.data.close()
         return True
 
-    def format_output(self, ret_values):
+    def _format_output(self, ret_values, ccds):
         """
 
         :param ret_values:
@@ -39,7 +41,15 @@ class Hdf5Spectra:
         if self.raw:
             return ret_values
         else:
-            return ','.join([str(f) for f in ret_values])
+            # convert to JSON format
+            # print ret_values.tolist()
+
+            # do not use list(np.float32([])) as it dos not work, but float64 does???
+            out_dict = {}
+            for i_ccd, ccd in enumerate(ccds):
+                out_dict['flx'+str(ccd)] = ret_values[i_ccd].tolist()
+            return json.dumps(out_dict)
+            # return json_dump  # HTTPResponse(json_dump, content_type='application/json')
 
     def _wvl_indices(self, ccd, wvl_range=None):
         """
@@ -50,20 +60,65 @@ class Hdf5Spectra:
         """
         pass
 
-    def get_h5_data(self, s_ids, wvl_range=None, ccd=None, merge='median'):
+    def _parse_ccd_sid(self, s_ids, ccd, ext):
         """
 
         :param s_ids:
-        :param wvl_range:
         :param ccd:
-        :param merge:
         :return:
         """
-        try:
-            ret_values = self.data['ccd1'][s_ids][:]
-            self.format_output(ret_values)
-        except:
+        if s_ids in self.data.keys():
+            sid_data = self.data[s_ids]
+            if 'ccd'+ccd in sid_data.keys():
+                ccd_data = sid_data['ccd'+ccd]
+                ext = 'ext'+ext
+                if ext in ccd_data.keys():
+                    ccd_values = ccd_data[ext][:]
+                    return ccd_values
+                else:
+                    # TODO
+                    pass
+            else:
+                # TODO
+                pass
+        else:
+            self.close()
             raise ValueError('Id not located in the HDF5.')
+
+    def get_h5_data(self, s_ids, ccds, wvl_ranges=None, merge='median', extension=4):
+        """
+
+        :param s_ids:
+        :param ccd:
+        :param wvl_range:
+        :param merge:
+        :param extension:
+        :return:
+        """
+
+        if not 0 <= int(extension) <= 4:
+            raise ValueError('Wrong extension number')
+
+        # check if we have correctly shaped inputs, if not, change them accordingly
+        if not isinstance(s_ids, list):
+            s_ids = list([s_ids])
+
+        if not isinstance(ccds, list):
+            ccds = list([ccds])
+
+        all_ccd_values = list([])
+        for get_ccd in ccds:
+            # TODO - use wvl range information
+            this_ccd_values = list([])
+            for get_s_id in s_ids:
+                this_ccd_values.append(self._parse_ccd_sid(str(get_s_id), str(get_ccd), str(extension)))
+
+            if merge is not None:
+                this_ccd_values = np.nanmedian(this_ccd_values, axis=0)
+            all_ccd_values.append(this_ccd_values)
+
+        # TODO - proper formatting of the output in the case of multiple ccds/sobject_ids
+        return self._format_output(all_ccd_values, ccds)
 
     def get_h5_wvl(self, ccd, wvl_range=None):
         """
@@ -74,6 +129,7 @@ class Hdf5Spectra:
         """
         try:
             ret_values = self.data['metadata']['wvl_ccd'+ccd][:]
-            self.format_output(ret_values)
+            return self.format_output(ret_values)
         except:
+            self.close()
             raise ValueError('Id not located in the HDF5.')
