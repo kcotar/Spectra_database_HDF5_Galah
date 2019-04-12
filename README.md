@@ -30,3 +30,30 @@ None - time: 68.9728s, avg: 0.2759s
 LZF produces large file in comparison to the uncompressed in our case.
 
 GZIP compresses file for ~10 % in comparison to the uncompressed.
+
+## Current HDF5 structure:
+    
+    HDF5 database/file
+    │ 
+    ├── metadata               # metadata about the resampled spectra contained in this file
+    │   ├── ccd1               # informations about data acquired by ccd1 
+    │   │   ├── step           # separation between neighbouring wavelength samples in angstrom
+    │   │   └── wvl            # complete array of wavelength samples to which original spectra were resampled to
+    │   │
+    │   ├── ccd2               # informations about data acquired by ccd1 
+    │   │   └── ...
+    │   └── ...
+    │
+    ├── ...
+    │ 
+    ├── 150101003401208        # example of a Galah sobject_id
+    │   ├── ext0               # contains resampled data found in the extension 0 of an original fits file
+    │   ├── ext1               # contains resampled data found in the extension 1 of an original fits file
+    │   ├── ext2               # contains resampled data found in the extension 2 of an original fits file
+    │   ├── ext3               # contains resampled data found in the extension 3 of an original fits file
+    │   └── ext4               # contains resampled data found in the extension 4 of an original fits file
+    │
+    ├── 150101003401209        # another Galah object
+    │   └── ...
+    │
+    └── ...
