@@ -12,6 +12,21 @@ How to store spectra in HDF5 file and read them on-the-fly using given class or 
 ### 2) Run your flask server
 Implemented in `get_data_test.py`.
 
-### 3) Get the data and use them. Possible usage:
+### 3) Get the data and use it. Possible usage:
 - direct using a ` Hdf5Spectra` class defined in `hdf_read.py`.
 - web API that returns JSON structure, examples of use are given in `examples.py`.
+
+
+## HDF5 compressions and reading time:
+**Usecase**: read 80 complete spectra, repeat 250 time (replicable test using `read_time_investigate.py`):
+
+GZIP - time: 78.8140s, avg: 0.3153s
+
+LZF  - time: 72.7860s, avg: 0.2911s
+
+None - time: 68.9728s, avg: 0.2759s
+
+## HDF5 compressions and file size:
+LZF produces large file in comparison to the uncompressed in our case.
+
+GZIP compresses file for ~10 % in comparison to the uncompressed.
