@@ -1,3 +1,6 @@
+# !!!!!!!!!!!
+# TODO: temp file at the moment
+# !!!!!!!!!!!
 from astropy.table import Table
 import numpy as np
 import h5py

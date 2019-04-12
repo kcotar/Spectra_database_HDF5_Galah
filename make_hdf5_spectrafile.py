@@ -14,7 +14,7 @@ spectral_list = ['galah_dr53_ccd1_4710_4910_wvlstep_0.040_ext4_20180327.pkl',
                  'galah_dr53_ccd3_6475_6745_wvlstep_0.060_ext4_20180327.pkl',
                  'galah_dr53_ccd4_7700_7895_wvlstep_0.070_ext4_20180327.pkl']
 
-f = h5py.File('galah_dr53.hdf5', 'w')
+f = h5py.File('galah_dr53_none_full.hdf5', 'w')
 
 descr = f.create_group('metadata')  # description of raw data
 
@@ -29,16 +29,17 @@ for pkl_file in spectral_list:
     n_wvl = len(wvl)
     ccd_data = descr.create_group(ccd)
     ccd_data.create_dataset('wvl', shape=(n_wvl,), dtype=np.float32,
-                         data=wvl,
-                         # compression="lzf")
-                         compression="gzip", compression_opts=9)
+                            data=wvl,
+                            compression=None)
+                            # compression="lzf")
+                            # compression="gzip", compression_opts=9)
     ccd_data.create_dataset('step', shape=(1,), dtype=np.float,
                             data=float(pkl_split[6]))
 
     print 'Reading pkl file'
     spectral_data = joblib.load(in_dir + pkl_file)
 
-    for i_id in range(len(s_ids))[:500]:
+    for i_id in range(len(s_ids)):  # [:500]:
         s_id = str(s_ids[i_id])
         print s_id
 
@@ -58,8 +59,9 @@ for pkl_file in spectral_list:
         if ext not in ccd_data.keys():
             ccd_data.create_dataset(ext, shape=(n_wvl,), dtype=np.float32,
                                     data=spectral_data[i_id, :],
+                                    compression=None)  # no compression
                                     # compression="lzf")  # faster, medium compression
-                                    compression="gzip", compression_opts=9)  # slowe, variable/better compression
+                                    # compression="gzip", compression_opts=9)  # slower, variable/better compression
         else:
             # nothing to to
             print 'Data for this ext already exists'
