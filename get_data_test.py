@@ -1,4 +1,5 @@
 import flask
+import json
 from hdf_read import Hdf5Spectra
 
 # -------------------------------
@@ -6,7 +7,7 @@ from hdf_read import Hdf5Spectra
 # -------------------------------
 app = flask.Flask(__name__)
 
-hdf_read = Hdf5Spectra('galah_dr53.hdf5', raw=False)
+hdf_read = Hdf5Spectra('galah_dr53_none_full.hdf5', raw=False)
 
 
 @app.route('/', methods=['GET'])
@@ -28,7 +29,8 @@ def get_data():
         # multiple spectra are merged by default
         merge = 'median'
         if 'merge' in in_args:
-            if str(in_args['merge']).lower() == 'false':
+            merge = str(in_args['merge']).lower()
+            if merge in ['false', 'none']:
                 merge = None
 
         # do we have to return spectra for only a few ccds?
@@ -36,15 +38,19 @@ def get_data():
         if 'ccd' in in_args:
             ccds = in_args['ccd'].split(',')
 
-        # get requested data
-        json_response = hdf_read.get_h5_data(in_args['sobject_id'].split(','),
-                                             ccds,
-                                             wvl_ranges=ranges,
-                                             extension=4,
-                                             merge=merge)
+        try:
+            # get requested data
+            json_response = hdf_read.get_h5_data(in_args['sobject_id'].split(','),
+                                                 ccds,
+                                                 wvl_ranges=ranges,
+                                                 extension=4,
+                                                 merge=merge)
 
-        # return them to the user in a json format
-        return flask.json.jsonify(json_response)
+            # return them to the user in a json format
+            return flask.json.jsonify(json_response)
+        except:
+            # return empty response to the user
+            return flask.json.jsonify(json.dumps({}))
     else:
         return 'Spectrum not selected'
 
@@ -59,12 +65,16 @@ def get_wvl():
         if 'range' in in_args:
             ranges = [r.split(':') for r in in_args['range'].split(',')]
 
-        # get requested data
-        json_response = hdf_read.get_h5_wvl(in_args['ccd'].split(','),
-                                            wvl_ranges=ranges)
+        try:
+            # get requested data
+            json_response = hdf_read.get_h5_wvl(in_args['ccd'].split(','),
+                                                wvl_ranges=ranges)
 
-        # return them to the user in a json format
-        return flask.json.jsonify(json_response)
+            # return them to the user in a json format
+            return flask.json.jsonify(json_response)
+        except:
+            # return empty response to the user
+            return flask.json.jsonify(json.dumps({}))
 
     else:
         return 'CCD not selected'

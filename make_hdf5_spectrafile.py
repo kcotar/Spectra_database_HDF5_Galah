@@ -1,4 +1,5 @@
 from astropy.table import Table
+from time import time
 import numpy as np
 import h5py
 from sklearn.externals import joblib
@@ -14,7 +15,7 @@ spectral_list = ['galah_dr53_ccd1_4710_4910_wvlstep_0.040_ext4_20180327.pkl',
                  'galah_dr53_ccd3_6475_6745_wvlstep_0.060_ext4_20180327.pkl',
                  'galah_dr53_ccd4_7700_7895_wvlstep_0.070_ext4_20180327.pkl']
 
-f = h5py.File('galah_dr53_none_full.hdf5', 'w')
+f = h5py.File('galah_dr53_gzip_full.hdf5', 'w')
 
 descr = f.create_group('metadata')  # description of raw data
 
@@ -39,15 +40,39 @@ for pkl_file in spectral_list:
     print 'Reading pkl file'
     spectral_data = joblib.load(in_dir + pkl_file)
 
-    for i_id in range(len(s_ids)):  # [:500]:
+    for i_id in range(len(s_ids)):  # [:7500]:
+        ts = time()
         s_id = str(s_ids[i_id])
-        print s_id
+        # print s_id
 
-        # create a group for every spectrum individually
-        if s_id not in f.keys():
-            sid_data = f.create_group(s_id)
+        # extract date information from the sobject_id
+        # date = s_id[:6]
+        year = s_id[:2]
+        daymonth = s_id[2:6]
+        field = s_id[6:10]
+
+        # create a group for every observing year and date
+        if year not in f.keys():
+            year_data = f.create_group(year)
         else:
-            sid_data = f[s_id]
+            year_data = f[year]
+
+        if daymonth not in year_data.keys():
+            date_data = year_data.create_group(daymonth)
+        else:
+            date_data = year_data[daymonth]
+
+        # create an observing field subgroup
+        if field not in date_data.keys():
+            field_data = date_data.create_group(field)
+        else:
+            field_data = date_data[field]
+
+        # create a subgroup for every spectrum individually
+        if s_id not in field_data.keys():
+            sid_data = field_data.create_group(s_id)
+        else:
+            sid_data = field_data[s_id]
 
         # create a ccd subgroup
         if ccd not in sid_data.keys():
@@ -62,6 +87,7 @@ for pkl_file in spectral_list:
                                     compression=None)  # no compression
                                     # compression="lzf")  # faster, medium compression
                                     # compression="gzip", compression_opts=9)  # slower, variable/better compression
+            print s_id, '{:.4f} s'.format(float(time()-ts))
         else:
             # nothing to to
             print 'Data for this ext already exists'

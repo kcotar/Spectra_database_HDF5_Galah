@@ -15,7 +15,7 @@ def make_request(req_str, verbose=False):
     :return:
     """
     if verbose:
-        print 'Reguested:', req_str
+        print 'Requested:', req_str
     web_txt = requests.get(url=req_str).json()
     return json.loads(web_txt)
 
@@ -49,6 +49,11 @@ web_get = web_spec + 'sobject_id=131116000501353,131116000501355,131116000501357
 data = make_request(web_get, verbose=True)
 print data['ccd1']
 
+# get std of merged spectra values
+web_get = web_spec + 'sobject_id=131116000501353,131116000501355,131116000501357&ccd=1,2&range=4800:4802,5700:5702&merge=Std'
+data = make_request(web_get, verbose=True)
+print data['ccd1']
+
 # do not merge the data
 web_get = web_spec + 'merge=False&sobject_id=131116000501353,131116000501355,131116000501357&ccd=1,2&range=4800:4802,5700:5702'
 data = make_request(web_get, verbose=True)
@@ -65,3 +70,25 @@ print data['ccd3']
 web_get = web_wvl + 'ccd=1,2&range=4810:4811,5725:5726'
 data = make_request(web_get, verbose=True)
 print data['ccd1']
+
+# ----------- Inexistent data ----------
+
+# during the merge nonexistent data are removed before the merge
+web_get = web_spec + 'sobject_id=131116000501353,345435,66664&ccd=1,2&range=4800:4810,5700:5710'
+data = make_request(web_get, verbose=True)
+print data['ccd2']
+
+# if no merge is requested unknown sobject_ids will be replaced with nan values
+web_get = web_spec + 'sobject_id=131116000501353,345435,66664&ccd=2,3&range=5700:5710,6670:6680&merge=False'
+data = make_request(web_get, verbose=True)
+print data
+
+# empty dictionary is returned in the case when all objects were not found
+web_get = web_spec + 'sobject_id=66664,33656555&ccd=2,3&range=5700:5710,6670:6680'
+data = make_request(web_get, verbose=True)
+print data
+
+# empty dictionary is returned in the case when all objects were not found
+web_get = web_spec + 'sobject_id=66664&ccd=2,3&range=5700:5710,6670:6680&merge=False'
+data = make_request(web_get, verbose=True)
+print data
