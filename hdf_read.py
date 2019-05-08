@@ -22,8 +22,19 @@ class Hdf5Spectra:
         """
         if not isfile(full_path):
             raise IOError('File does not exist')
-        self.data = h5py.File(full_path, 'r')
+
+        self.full_path = full_path
         self.raw = raw
+        self.data = None
+
+    def open(self):
+        """
+
+        :return:
+        """
+        if self.data is None:
+            self.data = h5py.File(self.full_path, 'r')
+        return True
 
     def close(self):
         """ Close given HDF5 file.
@@ -31,6 +42,7 @@ class Hdf5Spectra:
         :return:
         """
         self.data.close()
+        self.data = None
         return True
 
     def _format_output(self, ret_values, ccds):
@@ -90,6 +102,7 @@ class Hdf5Spectra:
         s_date = s_ids[2:6]
         s_field = s_ids[6:10]
 
+        self.open()
         # search for a requested spectrum and its extension
         if s_year in self.data.keys():
             year_data = self.data[s_year]
@@ -109,19 +122,26 @@ class Hdf5Spectra:
                                 else:
                                     # return complete spectrum information
                                     ccd_values = ccd_data[ext][:]
+                                self.close()
                                 return ccd_values
                             else:
                                 # some spectra might not have ext4, what to do in the case of merge option?
+                                self.close()
                                 raise KeyError(err_prefix + ' extension'+ext+' (s_id = ' + s_ids + ')')
                         else:
+                            self.close()
                             raise KeyError(err_prefix + ' ccd'+ccd+' (s_id = ' + s_ids + ')')
                     else:
+                        self.close()
                         raise KeyError(err_prefix + ' s_id ' + s_ids)
                 else:
+                    self.close()
                     raise KeyError(err_prefix + ' field ' + s_field + ' (s_id = ' + s_ids + ')')
             else:
+                self.close()
                 raise KeyError(err_prefix + ' date ' + s_date + ' (s_id = ' + s_ids + ')')
         else:
+            self.close()
             raise KeyError(err_prefix + ' year ' + s_year + ' (s_id = ' + s_ids + ')')
 
     def get_h5_data(self, s_ids, ccds, wvl_ranges=None, merge='median', extension=4):
@@ -151,7 +171,9 @@ class Hdf5Spectra:
             idx_range = None
             if wvl_ranges is not None:
                 # determine the min and max array index to be read
+                self.open()
                 wvl_values = self.data['metadata']['ccd' + str(get_ccd)]['wvl'][:]
+                self.close()
                 idx_wvl = np.where(np.logical_and(wvl_values >= float(wvl_ranges[i_ccd][0]),
                                                   wvl_values <= float(wvl_ranges[i_ccd][1])))[0]
 
@@ -207,6 +229,7 @@ class Hdf5Spectra:
         """
         wvl_values_all = list([])
         for i_ccd, get_ccd in enumerate(ccds):
+            self.open()
             if 'ccd' + str(get_ccd) in self.data['metadata'].keys():
                 wvl_values = self.data['metadata']['ccd' + str(get_ccd)]['wvl'][:]
                 if wvl_ranges is not None:
@@ -215,6 +238,7 @@ class Hdf5Spectra:
                     wvl_values = wvl_values[idx_wvl]
                 wvl_values_all.append(wvl_values)
             else:
+                self.close()
                 raise ValueError('CCD not located in the metadata.')
-
+            self.close()
         return self._format_output(wvl_values_all, ccds)

@@ -81,4 +81,5 @@ def get_wvl():
 
 
 app.run(host='193.2.67.179', port=8080, debug=True)
-hdf_read.close()
+# closing is not needed any more
+# hdf_read.close()
