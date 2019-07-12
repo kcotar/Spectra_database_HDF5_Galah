@@ -7,7 +7,7 @@ from hdf_read import Hdf5Spectra
 # -------------------------------
 app = flask.Flask(__name__)
 
-hdf_read = Hdf5Spectra('galah_dr53_none_full.hdf5', raw=False)
+hdf_read = Hdf5Spectra('galah_dr53_20190516_none_full.hdf5', raw=False)
 
 
 @app.route('/', methods=['GET'])
@@ -20,6 +20,11 @@ def get_data():
     in_args = flask.request.args
     # the only mandatory input is the sobject_id all others are optional
     if 'sobject_id' in in_args:
+
+        # did user request a specific extension?
+        ext = 4
+        if 'ext' in in_args:
+            ext = int(in_args['ext'])
 
         # did user request a specific wvl range?
         ranges = None
@@ -43,7 +48,7 @@ def get_data():
             json_response = hdf_read.get_h5_data(in_args['sobject_id'].split(','),
                                                  ccds,
                                                  wvl_ranges=ranges,
-                                                 extension=4,
+                                                 extension=ext,
                                                  merge=merge)
 
             # return them to the user in a json format
